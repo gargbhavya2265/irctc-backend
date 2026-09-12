@@ -3,18 +3,32 @@ const logger = require('../../config/logger');
 const { KAFKA_TOPICS } = require('../../../shared/constants/kafka-topics');
 
 class AdminProducer {
-     constructor() { this.isInitialized = false; }
+     constructor() {
+          this.isInitialized = false;
+     }
 
      async initialize() {
+          if (!producer) {
+               return false;
+          }
+
           if (!this.isInitialized) {
                await connectProducer();
                this.isInitialized = true;
           }
+
+          return true;
      }
 
      async sendMessage(topic, key, value) {
           try {
-               await this.initialize();
+               const initialized = await this.initialize();
+
+               if (!initialized) {
+                    logger.warn(`Kafka unavailable, skipping message for topic: ${topic}`);
+                    return null;
+               }
+
                const result = await producer.send({
                     topic,
                     messages: [{
@@ -23,27 +37,33 @@ class AdminProducer {
                          timestamp: Date.now().toString(),
                     }],
                });
+
                logger.info(`Message sent to topic: ${topic}`, {
                     key,
                     partition: result[0].partition,
                     offset: result[0].offset,
                });
+
                return result;
           } catch (error) {
                logger.error(`Failed to send message to topic: ${topic}`, {
                     error: error.message,
                     key,
                });
-               throw error;
+
+               return null;
           }
      }
-
 
      async publishStationCreated(station) {
           return this.sendMessage(
                KAFKA_TOPICS.STATION_CREATED,
                `station-${station.id}`,
-               { eventType: 'STATION_CREATED', data: station, timestamp: new Date().toISOString() }
+               {
+                    eventType: 'STATION_CREATED',
+                    data: station,
+                    timestamp: new Date().toISOString()
+               }
           );
      }
 
@@ -58,7 +78,7 @@ class AdminProducer {
      async publishRouteCreated(routeData) {
           return this.sendMessage(
                KAFKA_TOPICS.ROUTE_CREATED,
-               `route-${routeData.id}`,
+               `route-${routeData.train.id}`,
                routeData
           );
      }
@@ -75,7 +95,11 @@ class AdminProducer {
           return this.sendMessage(
                KAFKA_TOPICS.SCHEDULE_CANCELLED,
                `schedule-${schedule.id}`,
-               { eventType: 'SCHEDULE_CANCELLED', data: schedule, timestamp: new Date().toISOString() }
+               {
+                    eventType: 'SCHEDULE_CANCELLED',
+                    data: schedule,
+                    timestamp: new Date().toISOString()
+               }
           );
      }
 }
