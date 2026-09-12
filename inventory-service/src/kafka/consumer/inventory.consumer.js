@@ -1,7 +1,7 @@
 const { consumer, producer, connectProducer } = require('../../config/kafka');
 const logger = require('../../config/logger');
-const { KAFKA_TOPICS } = require('../../../../shared/constants/kafka-topics');
-const { withDLQ } = require('../../../../shared/utils/dlqHandler');
+const { KAFKA_TOPICS } = require('../../../shared/constants/kafka-topics');
+const { withDLQ } = require('../../../shared/utils/dlqHandler');
 const inventoryService = require('../../services/inventory.service');
 
 class InventoryConsumer {

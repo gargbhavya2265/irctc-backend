@@ -44,7 +44,10 @@ const verifyOTP = async(otp, otpSessionId) =>{
 
      await notificationProducer.sendWelcomeEmail(meta.email, meta.firstName);
      logger.info(`Welcome email queued for ${meta.email}`);
-     return user;
+
+     const { password: _password, ...safeUser } = user;
+
+     return safeUser;
      
 }
 

@@ -1,8 +1,8 @@
 const { consumer, producer, connectProducer } = require('../../config/kafka');
 const searchService = require('../../services/search.service');
 const logger = require('../../config/logger');
-const { KAFKA_TOPICS } = require('../../../../shared/constants/kafka-topics');
-const { withDLQ } = require('../../../../shared/utils/dlqHandler');
+const { KAFKA_TOPICS } = require('../../../shared/constants/kafka-topics');
+const { withDLQ } = require('../../../shared/utils/dlqHandler');
 
 class SearchConsumer {
      async start() {

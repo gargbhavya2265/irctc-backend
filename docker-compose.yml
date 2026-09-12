@@ -123,6 +123,167 @@ services:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     networks:
       - irctc-network
+
+  user-service:
+    build:
+      context: .
+      dockerfile: ./user-service/Dockerfile
+    container_name: user-service
+    restart: always
+    env_file:
+      - ./user-service/.env
+    ports:
+      - "4001:4001"
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    networks:
+      - irctc-network
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./notification-service/Dockerfile
+    container_name: notification-service
+    restart: always
+    env_file:
+      - ./notification-service/.env
+    environment:
+      NODE_ENV: production
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - irctc-network
+
+  search-service:
+    build:
+      context: .
+      dockerfile: ./search-service/Dockerfile
+    container_name: search-service
+    restart: always
+    env_file:
+      - ./search-service/.env
+    environment:
+      PORT: 4002
+      NODE_ENV: production
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      KAFKA_BROKER: kafka:9092
+      ES_RECREATE_INDICES: "false"
+    ports:
+      - "4002:4002"
+    depends_on:
+      - elasticsearch
+      - kafka
+    networks:
+      - irctc-network
+  admin-service:
+    build:
+      context: .
+      dockerfile: ./admin-service/Dockerfile
+    container_name: admin-service
+    restart: always
+    env_file:
+      - ./admin-service/.env
+    ports:
+      - "4003:4003"
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - irctc-network
+  inventory-service:
+    build:
+      context: .
+      dockerfile: ./inventory-service/Dockerfile
+    container_name: inventory-service
+    restart: always
+    env_file:
+      - ./inventory-service/.env
+    environment:
+      PORT: 4007
+      NODE_ENV: production
+      DATABASE_URL: postgres://admin:irctcpass@postgres:5432/inventory_service_database
+      KAFKA_BROKER: kafka:9092
+      KAFKA_CLIENT_ID: inventory-service
+      REDIS_URL: redis://:irctcpass@redis:6379
+    ports:
+      - "4007:4007"
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    networks:
+      - irctc-network
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: ./payment-service/Dockerfile
+    container_name: payment-service
+    restart: always
+    env_file:
+      - ./payment-service/.env
+    environment:
+      PORT: 4006
+      NODE_ENV: production
+      DATABASE_URL: postgres://admin:irctcpass@postgres:5432/payment_service_database
+      KAFKA_BROKER: kafka:9092
+      KAFKA_CLIENT_ID: payment-service
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+      PAYMENT_GATEWAY: razorpay
+    ports:
+      - "4006:4006"
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - irctc-network
+  
+  booking-service:
+    build:
+      context: .
+      dockerfile: ./booking-service/Dockerfile
+    container_name: booking-service
+    restart: always
+    environment:
+      PORT: 4005
+      NODE_ENV: production
+      DATABASE_URL: postgres://admin:irctcpass@postgres:5432/booking_service_database
+      REDIS_URL: redis://:irctcpass@redis:6379
+      KAFKA_BROKER: kafka:9092
+      KAFKA_CLIENT_ID: booking-service
+      USER_SERVICE_URL: http://user-service:4001
+      ADMIN_SERVICE_URL: http://admin-service:4003
+      INVENTORY_SERVICE_URL: http://inventory-service:4007
+      PAYMENT_SERVICE_URL: http://payment-service:4006
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY}
+    ports:
+      - "4005:4005"
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+      - user-service
+      - admin-service
+      - inventory-service
+      - payment-service
+    networks:
+      - irctc-network
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    restart: always
+    env_file:
+      - ./api-gateway/.env
+    ports:
+      - "4000:4000"
+    depends_on:
+      - user-service
+      - redis
+    networks:
+      - irctc-network
+    
 volumes:
   postgres_data:
   redis_data:

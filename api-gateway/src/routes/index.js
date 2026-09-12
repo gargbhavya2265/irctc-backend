@@ -140,6 +140,14 @@ router.get(
 );
 
 router.get(
+    '/admins/trains/train',
+    ipRateLimit(),
+    requireAuth,
+    userRateLimit(),
+    adminServiceProxy
+);
+
+router.get(
     '/admins/trains/train/:trainId',
     ipRateLimit(),
     requireAuth,

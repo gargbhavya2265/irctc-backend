@@ -1,9 +1,9 @@
 const { consumer, producer, connectProducer } = require('../../config/kafka');
 const emailService = require('../../services/email.service');
 const logger = require('../../config/logger');
-const { KAFKA_TOPICS } = require('../../../../shared/constants/kafka-topics');
-const { withDLQ } = require('../../../../shared/utils/dlqHandler');
+const { KAFKA_TOPICS } = require('../../../shared/constants/kafka-topics');
 
+const { withDLQ } = require('../../../shared/utils/dlqHandler');
 class EmailConsumer {
      async start() {
           try {

@@ -165,3 +165,14 @@ serviceAccountKey.json
 # Add service-specific ignores here if needed
 # user-service/uploads/
 # booking-service/temp/
+cookies.txt
+current-cookies.txt
+login-cookies.txt
+# Local testing files
+fresh-cookies.txt
+login-body.json
+route-body.json
+station1-body.json
+station2-body.json
+station3-body.json
+train-body.json

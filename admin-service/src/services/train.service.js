@@ -104,7 +104,10 @@ const createRoute = async (data) => {
           include: { seats: { orderBy: { seatNumber: 'asc' } } },
      });
 
-     await adminProducer.publishRouteCreated({ ...route, train: trainWithSeats });
+    await adminProducer.publishRouteCreated({
+     train: trainWithSeats,
+     routeStations: route.routeStations,
+});
      return route;
 };
 
