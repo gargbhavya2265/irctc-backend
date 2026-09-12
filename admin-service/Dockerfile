@@ -12,6 +12,7 @@ COPY admin-service/src ./src
 COPY shared ./shared
 
 RUN npx prisma generate
+RUN npx prisma migrate deploy
 
 EXPOSE 4003
 
