@@ -212,6 +212,7 @@ function createProxy(serviceName, serviceUrl) {
                'transfer-encoding',
                'host',
                'content-length',
+               'set-cookie',
                ];
 
                Object.keys(result.headers).forEach((key) => {
@@ -220,8 +221,13 @@ function createProxy(serviceName, serviceUrl) {
                }
                });
 
-               if (result.headers['set-cookie']) {
-               res.setHeader('Set-Cookie', result.headers['set-cookie']);
+               const setCookie = result.headers['set-cookie'];
+
+               if (setCookie) {
+               res.setHeader(
+               'Set-Cookie',
+               Array.isArray(setCookie) ? setCookie : [setCookie]
+               );
                }
 
                res.status(result.status).json(result.data);
