@@ -1,7 +1,7 @@
 const { ConflictError, BadRequestError, ForbiddenError, UnauthorizedError } = require("../utils/error")
 const {generateAndStoreOtp, verifyOtp} = require('../utils/otp');
 const {generateAccessToken, generateRefreshToken, verifyRefreshToken} = require('../utils/auth');
-const notificationProducer = require('../kafka/producer/notification.producer')
+const emailService = require('../services/email.service')
 const bcrypt = require('bcrypt');
 const prisma = require('../config/prisma');
 const {redis} = require('../config/redis');
@@ -22,7 +22,7 @@ const sendOTP = async(firstName, lastName, email, password) =>{
      const hashedPassword = await bcrypt.hash(password, 12);
      const meta = {firstName, lastName, email, hashedPassword};
      const {otp, otpSessionId} = await generateAndStoreOtp(meta);
-     await notificationProducer.sendOtpEmail(email, otp, (config.OTP_TTL) / 60);
+     await emailService.sendOtpEmail(email, otp, (config.OTP_TTL) / 60);
      logger.info(`OTP email queued for : ${email}`);
      return {otpSessionId}
 }
@@ -42,7 +42,7 @@ const verifyOTP = async(otp, otpSessionId) =>{
           }
      })
 
-     await notificationProducer.sendWelcomeEmail(meta.email, meta.firstName);
+     await emailService.sendWelcomeEmail(meta.email, meta.firstName);
      logger.info(`Welcome email queued for ${meta.email}`);
 
      const { password: _password, ...safeUser } = user;
