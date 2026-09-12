@@ -7,7 +7,7 @@ const kafka = new Kafka({
      brokers: [config.KAFKA_BROKER],
      ssl: true,
      sasl: {
-          mechanism: 'plain',
+          mechanism: 'scram-sha-512',
           username: config.KAFKA_USERNAME,
           password: config.KAFKA_PASSWORD,
      },
