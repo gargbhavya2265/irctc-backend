@@ -6,7 +6,8 @@ COPY admin-service/package*.json ./
 
 RUN npm ci
 
-COPY admin-service/prisma ./prisma
+COPY admin-service/prisma/schema.prisma ./prisma/schema.prisma
+COPY admin-service/prisma/migrations ./prisma/migrations
 COPY admin-service/prisma.config.ts ./
 COPY admin-service/src ./src
 COPY shared ./shared
