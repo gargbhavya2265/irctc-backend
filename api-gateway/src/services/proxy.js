@@ -88,16 +88,16 @@ async function forwardRequest(serviceUrl, path, method, data, headers, circuitBr
      logger.info(url);
      // http://localhost:4001/auth/login
      const requestConfig = {
-          method,
-          url,
-          timeout: config.SERVICE_TIMEOUT_MS,
-          headers: {
-               ...headers,
-               // Remove host header to avoid conflicts
-               host: undefined,
-               // Remove content-length to let axios recalculate
-               'content-length': undefined,
-          },
+     method,
+     url,
+     timeout: config.SERVICE_TIMEOUT_MS,
+     withCredentials: true,
+     headers: {
+          ...headers,
+          cookie: headers.cookie,
+          host: undefined,
+          'content-length': undefined,
+     },
           // Important: Don't validate status, let service response through
           validateStatus: () => true,
           // Set max redirects
@@ -206,14 +206,24 @@ function createProxy(serviceName, serviceUrl) {
                );
 
                // Forward response headers (except some)
-               const excludeHeaders = ['connection', 'keep-alive', 'transfer-encoding', 'host'];
+              const excludeHeaders = [
+                    'connection',
+                    'keep-alive',
+                    'transfer-encoding',
+                    'host',
+                    'content-length'
+               ];
+
                Object.keys(result.headers).forEach((key) => {
                     if (!excludeHeaders.includes(key.toLowerCase())) {
                          res.setHeader(key, result.headers[key]);
                     }
                });
 
-               // Send response
+               if (result.headers['set-cookie']) {
+                    res.setHeader('Set-Cookie', result.headers['set-cookie']);
+               }
+
                res.status(result.status).json(result.data);
           } catch (err) {
                next(err);
