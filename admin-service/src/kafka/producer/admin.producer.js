@@ -78,7 +78,7 @@ class AdminProducer {
      async publishRouteCreated(routeData) {
           return this.sendMessage(
                KAFKA_TOPICS.ROUTE_CREATED,
-               `route-${routeData.train.id}`,
+               `route-${routeData.id}`,
                routeData
           );
      }
