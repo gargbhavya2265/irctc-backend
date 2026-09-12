@@ -5,6 +5,12 @@ const { config } = require('.');
 const kafka = new Kafka({
      clientId: config.KAFKA_CLIENT_ID,
      brokers: [config.KAFKA_BROKER],
+     ssl: true,
+     sasl: {
+          mechanism: 'plain',
+          username: config.KAFKA_USERNAME,
+          password: config.KAFKA_PASSWORD,
+     },
      logLevel: logLevel.ERROR,
      retry: { initialRetryTime: 300, retries: 8, maxRetryTime: 30000 },
 });

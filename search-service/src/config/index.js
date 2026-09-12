@@ -7,6 +7,8 @@ const config = {
      ELASTICSEARCH_API_KEY: process.env.ELASTICSEARCH_API_KEY,
      KAFKA_BROKER: process.env.KAFKA_BROKER,
      KAFKA_CLIENT_ID: process.env.KAFKA_CLIENT_ID,
+     KAFKA_USERNAME: process.env.KAFKA_USERNAME,
+     KAFKA_PASSWORD: process.env.KAFKA_PASSWORD,
      ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
 }
 
