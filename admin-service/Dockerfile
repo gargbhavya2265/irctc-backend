@@ -12,8 +12,7 @@ COPY admin-service/src ./src
 COPY shared ./shared
 
 RUN npx prisma generate
-RUN npx prisma migrate deploy
 
 EXPOSE 4003
 
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
