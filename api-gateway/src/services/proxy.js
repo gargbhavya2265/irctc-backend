@@ -206,22 +206,22 @@ function createProxy(serviceName, serviceUrl) {
                );
 
                // Forward response headers (except some)
-              const excludeHeaders = [
-                    'connection',
-                    'keep-alive',
-                    'transfer-encoding',
-                    'host',
-                    'content-length'
+               const excludedHeaders = [
+               'connection',
+               'keep-alive',
+               'transfer-encoding',
+               'host',
+               'content-length',
                ];
 
                Object.keys(result.headers).forEach((key) => {
-                    if (!excludeHeaders.includes(key.toLowerCase())) {
-                         res.setHeader(key, result.headers[key]);
-                    }
+               if (!excludedHeaders.includes(key.toLowerCase())) {
+               res.setHeader(key, result.headers[key]);
+               }
                });
 
                if (result.headers['set-cookie']) {
-                    res.setHeader('Set-Cookie', result.headers['set-cookie']);
+               res.setHeader('Set-Cookie', result.headers['set-cookie']);
                }
 
                res.status(result.status).json(result.data);
