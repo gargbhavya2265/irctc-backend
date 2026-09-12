@@ -2,7 +2,10 @@ const express = require('express');
 
 const { requireAuth } = require('../middlewares/auth.middleware');
 
-const { createProxy, getCircuitBreakerStatus } = require('../services/proxy');
+const {
+    createProxy,
+    getCircuitBreakerStatus
+} = require('../services/proxy');
 
 const {
     ipRateLimit,
@@ -89,7 +92,6 @@ router.delete(
     userServiceProxy
 );
 
-
 // ===========================
 // ADMIN SERVICE ROUTES
 // ===========================
@@ -99,32 +101,10 @@ const adminServiceProxy = createProxy(
     config.SERVICES.ADMIN_SERVICE_URL
 );
 
+// ---------- Stations ----------
+
 router.post(
     '/admins/stations/station',
-    ipRateLimit(),
-    requireAuth,
-    userRateLimit(),
-    adminServiceProxy
-);
-
-router.post(
-    '/admins/trains/train',
-    ipRateLimit(),
-    requireAuth,
-    userRateLimit(),
-    adminServiceProxy
-);
-
-router.post(
-    '/admins/trains/route',
-    ipRateLimit(),
-    requireAuth,
-    userRateLimit(),
-    adminServiceProxy
-);
-
-router.post(
-    '/admins/schedules/schedule',
     ipRateLimit(),
     requireAuth,
     userRateLimit(),
@@ -133,6 +113,16 @@ router.post(
 
 router.get(
     '/admins/stations/station',
+    ipRateLimit(),
+    requireAuth,
+    userRateLimit(),
+    adminServiceProxy
+);
+
+// ---------- Trains ----------
+
+router.post(
+    '/admins/trains/train',
     ipRateLimit(),
     requireAuth,
     userRateLimit(),
@@ -155,6 +145,34 @@ router.get(
     adminServiceProxy
 );
 
+// ---------- Routes ----------
+
+router.post(
+    '/admins/trains/route',
+    ipRateLimit(),
+    requireAuth,
+    userRateLimit(),
+    adminServiceProxy
+);
+
+// ---------- Schedules ----------
+
+router.post(
+    '/admins/schedules/schedule',
+    ipRateLimit(),
+    requireAuth,
+    userRateLimit(),
+    adminServiceProxy
+);
+
+router.get(
+    '/admins/schedules/schedule',
+    ipRateLimit(),
+    requireAuth,
+    userRateLimit(),
+    adminServiceProxy
+);
+
 router.put(
     '/admins/schedules/schedule/:scheduleId',
     ipRateLimit(),
@@ -162,7 +180,6 @@ router.put(
     userRateLimit(),
     adminServiceProxy
 );
-
 
 // ===========================
 // SEARCH SERVICE ROUTES
@@ -186,7 +203,6 @@ router.get(
     searchServiceProxy
 );
 
-
 // ===========================
 // INVENTORY SERVICE ROUTES
 // ===========================
@@ -197,6 +213,7 @@ const inventoryServiceProxy = createProxy(
 );
 
 // Public availability
+
 router.get(
     '/inventory/schedules/:scheduleId/availability',
     endpointRateLimit(120, 60000),
@@ -204,6 +221,7 @@ router.get(
 );
 
 // Authenticated seat statuses
+
 router.get(
     '/inventory/schedules/:scheduleId/seats',
     ipRateLimit(),
@@ -211,7 +229,6 @@ router.get(
     userRateLimit(),
     inventoryServiceProxy
 );
-
 
 // ===========================
 // BOOKING SERVICE ROUTES
@@ -223,6 +240,7 @@ const bookingServiceProxy = createProxy(
 );
 
 // Booking attempts
+
 router.post(
     '/bookings/bookings',
     ipRateLimit(),
@@ -263,7 +281,6 @@ router.post(
     bookingServiceProxy
 );
 
-
 // ===========================
 // PAYMENT SERVICE ROUTES
 // ===========================
@@ -274,37 +291,31 @@ const paymentServiceProxy = createProxy(
 );
 
 // Razorpay webhook
+
 router.post(
     '/payments/webhooks/razorpay',
     paymentServiceProxy
 );
-
 
 // ===========================
 // GATEWAY HEALTH
 // ===========================
 
 router.get('/gateway/health', (req, res) => {
-
     res.status(200).json({
         success: true,
         message: 'API Gateway is healthy',
         timestamp: new Date().toISOString()
     });
-
 });
 
-
 router.get('/gateway/circuit-breakers', (req, res) => {
-
     const status = getCircuitBreakerStatus();
 
     res.status(200).json({
         success: true,
         circuitBreakers: status
     });
-
 });
-
 
 module.exports = router;
