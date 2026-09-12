@@ -5,7 +5,9 @@ const { config } = require('.');
 const kafka = new Kafka({
      clientId: config.KAFKA_CLIENT_ID,
      brokers: [config.KAFKA_BROKER],
-     ssl: true,
+     ssl: {
+          rejectUnauthorized: false,
+     },
      sasl: {
           mechanism: 'scram-sha-512',
           username: config.KAFKA_USERNAME,
