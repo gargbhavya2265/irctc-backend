@@ -11,6 +11,14 @@ const kafka = kafkaBroker.length
           clientId: config.KAFKA_CLIENT_ID,
           brokers: kafkaBroker,
           logLevel: logLevel.ERROR,
+          ssl: {
+               rejectUnauthorized: false,
+          },
+          sasl: {
+               mechanism: 'scram-sha-512',
+               username: config.KAFKA_USERNAME,
+               password: config.KAFKA_PASSWORD,
+          },
           retry: {
                initialRetryTime: 300,
                retries: 8,
@@ -36,14 +44,29 @@ let isConnected = false;
 const connectProducer = async () => {
      if (!producer) {
           logger.warn('Kafka broker not configured, skipping Kafka connection');
-          return;
+          return false;
      }
 
      if (!isConnected) {
-          await producer.connect();
-          isConnected = true;
-          logger.info('Kafka producer connected');
+          try {
+               await Promise.race([
+                    producer.connect(),
+                    new Promise((_, reject) =>
+                         setTimeout(() => reject(new Error('Kafka connection timeout')), 10000)
+                    ),
+               ]);
+
+               isConnected = true;
+               logger.info('Kafka producer connected');
+          } catch (error) {
+               logger.error('Kafka producer connection failed', {
+                    error: error.message,
+               });
+               return false;
+          }
      }
+
+     return true;
 };
 
 const disconnectProducer = async () => {
