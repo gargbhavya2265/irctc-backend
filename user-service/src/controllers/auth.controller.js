@@ -7,10 +7,11 @@ const getDeviceFingerprint = require('../utils/deviceFingerprint')
 const isProd = process.env.NODE_ENV === 'production';
 
 const cookieOptions = (maxAge) => ({
-     httpOnly: true,
-     secure: isProd,
-     sameSite: isProd ? 'none' : 'lax',
-     maxAge,
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+    path: '/',
+    maxAge,
 });
 
 exports.sendOTP = asyncHandler(async(req, res) =>{
