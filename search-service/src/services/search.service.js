@@ -22,9 +22,10 @@ const indexStation = async (event) => {
                     name: station.name,
                     code: station.code,
                     city: station.city,
+                    state: station.state,
                     suggest: {
-                         input: [station.name, station.code, station.city].filter(Boolean),
-                         weight: 10,
+                    input: [station.name,station.code,station.city,station.state].filter(Boolean),
+                    weight: 10,
                     },
                },
                refresh: true,
