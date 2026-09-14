@@ -119,6 +119,14 @@ router.get(
     adminServiceProxy
 );
 
+router.post(
+    '/admins/stations/station/reindex',
+    ipRateLimit(),
+    requireAuth,
+    userRateLimit(),
+    adminServiceProxy
+);
+
 // ---------- Trains ----------
 
 router.post(
