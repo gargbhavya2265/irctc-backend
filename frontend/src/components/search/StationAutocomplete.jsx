@@ -240,38 +240,6 @@ export default function StationAutocomplete({
           ))}
         </ul>
       )}
-
-      {/* No Results */}
-      {open &&
-        !loading &&
-        debouncedQuery.length >= 2 &&
-        suggestions.length === 0 && (
-          <div
-            className="
-              absolute
-              z-50
-              left-0
-              right-0
-              mt-2
-              rounded-xl
-              border
-              border-gray-200
-              bg-white
-              px-4
-              py-5
-              text-center
-              shadow-xl
-            "
-          >
-            <p className="text-sm font-medium text-gray-600">
-              No stations found
-            </p>
-
-            <p className="mt-1 text-xs text-gray-400">
-              Try searching with a different station name or code
-            </p>
-          </div>
-        )}
     </div>
   );
 }
