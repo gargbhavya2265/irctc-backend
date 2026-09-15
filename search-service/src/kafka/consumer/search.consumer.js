@@ -1,54 +1,73 @@
 const { consumer, producer, connectProducer } = require('../../config/kafka');
+
 const searchService = require('../../services/search.service');
+
 const logger = require('../../config/logger');
+
 const { KAFKA_TOPICS } = require('../../../shared/constants/kafka-topics');
+
 const { withDLQ } = require('../../../shared/utils/dlqHandler');
 
 class SearchConsumer {
-     async start() {
-          await consumer.connect();
-          await connectProducer(); // needed for DLQ publishing
-          logger.info('Search consumer connected');
+  async start() {
+    await consumer.connect();
 
-          await consumer.subscribe({
-               topics: [
-                    KAFKA_TOPICS.STATION_CREATED,
-                    KAFKA_TOPICS.ROUTE_CREATED,
-                    KAFKA_TOPICS.SCHEDULE_CREATED,
-                    KAFKA_TOPICS.SCHEDULE_CANCELLED,
-                    KAFKA_TOPICS.SEAT_AVAILABILITY_UPDATED,
-               ],
-               fromBeginning: true,
+    await connectProducer(); // needed for DLQ publishing
+
+    logger.info('Search consumer connected');
+
+    await consumer.subscribe({
+      topics: [
+        KAFKA_TOPICS.ADMIN_EVENTS,
+        KAFKA_TOPICS.INVENTORY_EVENTS,
+      ],
+      fromBeginning: true,
+    });
+
+    await consumer.run({
+      eachMessage: withDLQ(
+        producer,
+        KAFKA_TOPICS.DLQ_EVENTS,
+        logger,
+        async ({ topic, partition, message, parsedValue }) => {
+          logger.info(`Processing ${topic}`, {
+            partition,
+            offset: message.offset,
+            eventType: parsedValue.eventType,
           });
 
-          await consumer.run({
-               eachMessage: withDLQ(producer, KAFKA_TOPICS.DLQ_SEARCH, logger, async ({ topic, partition, message, parsedValue }) => {
-                    logger.info(`Processing ${topic}`, { partition, offset: message.offset });
+          switch (parsedValue.eventType) {
+            case 'STATION_CREATED':
+              await searchService.indexStation(parsedValue.data);
+              break;
 
-                    switch (topic) {
-                         case KAFKA_TOPICS.STATION_CREATED:
-                              await searchService.indexStation(parsedValue);
-                              break;
-                         case KAFKA_TOPICS.ROUTE_CREATED:
-                              await searchService.indexTrainRoute(parsedValue);
-                              break;
-                         case KAFKA_TOPICS.SCHEDULE_CREATED:
-                              await searchService.indexSchedule(parsedValue);
-                              break;
-                         case KAFKA_TOPICS.SCHEDULE_CANCELLED:
-                              await searchService.cancelSchedule(parsedValue);
-                              break;
-                         case KAFKA_TOPICS.SEAT_AVAILABILITY_UPDATED:
-                              await searchService.updateSeatAvailability(parsedValue);
-                              break;
-                         default:
-                              logger.warn(`Unknown topic: ${topic}`);
-                    }
-               }),
-          });
+            case 'ROUTE_CREATED':
+              await searchService.indexTrainRoute(parsedValue.data);
+              break;
 
-          logger.info('Search consumer running...');
-     }
+            case 'SCHEDULE_CREATED':
+              await searchService.indexSchedule(parsedValue.data);
+              break;
+
+            case 'SCHEDULE_CANCELLED':
+              await searchService.cancelSchedule(parsedValue.data);
+              break;
+
+            case 'SEAT_AVAILABILITY_UPDATED':
+              await searchService.updateSeatAvailability(parsedValue.data);
+              break;
+
+            default:
+              logger.info(
+                `Ignoring event: ${parsedValue.eventType}`
+              );
+          }
+        }
+      ),
+    });
+
+    logger.info('Search consumer running...');
+  }
 }
 
 module.exports = new SearchConsumer();

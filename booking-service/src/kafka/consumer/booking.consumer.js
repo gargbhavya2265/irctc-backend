@@ -6,56 +6,66 @@ const { withDLQ } = require('../../../shared/utils/dlqHandler');
 const bookingService = require('../../services/booking.service');
 
 const start = async () => {
-     await consumer.connect();
-     await connectProducer(); // needed for DLQ publishing
-     logger.info('Booking consumer connected');
+  await consumer.connect();
+  await connectProducer();
 
-     await consumer.subscribe({
-          topics: [
-               KAFKA_TOPICS.PAYMENT_SUCCESS,
-               KAFKA_TOPICS.PAYMENT_FAILED,
-               KAFKA_TOPICS.SCHEDULE_CANCELLED,
-          ],
-          fromBeginning: false,
-     });
+  logger.info('Booking consumer connected');
 
-     await consumer.run({
-          eachMessage: withDLQ(producer, KAFKA_TOPICS.DLQ_BOOKING, logger, async ({ topic, partition, message, parsedValue }) => {
-               logger.info(`Received message on topic: ${topic}`, {
-                    partition,
-                    offset: message.offset,
-                    key: message.key?.toString(),
-               });
+  await consumer.subscribe({
+    topics: [
+      KAFKA_TOPICS.PAYMENT_EVENTS,
+      KAFKA_TOPICS.ADMIN_EVENTS,
+    ],
+    fromBeginning: false,
+  });
 
-               switch (topic) {
-                    case KAFKA_TOPICS.PAYMENT_SUCCESS:
-                         await bookingService.handlePaymentSuccess(
-                              parsedValue.paymentOrderId,
-                              parsedValue.gatewayPaymentId,
-                              parsedValue.amount
-                         );
-                         break;
+  await consumer.run({
+    eachMessage: withDLQ(
+      producer,
+      KAFKA_TOPICS.DLQ_EVENTS,
+      logger,
+      async ({ topic, partition, message, parsedValue }) => {
+        logger.info(`Received message on topic: ${topic}`, {
+          partition,
+          offset: message.offset,
+          key: message.key?.toString(),
+        });
 
-                    case KAFKA_TOPICS.PAYMENT_FAILED:
-                         await bookingService.handlePaymentFailure(
-                              parsedValue.paymentOrderId,
-                              parsedValue.reason
-                         );
-                         break;
+        switch (parsedValue.eventType) {
+          case 'PAYMENT_SUCCESS':
+            await bookingService.handlePaymentSuccess(
+              parsedValue.data.paymentOrderId,
+              parsedValue.data.gatewayPaymentId,
+              parsedValue.data.amount
+            );
+            break;
 
-                    case KAFKA_TOPICS.SCHEDULE_CANCELLED: {
-                         const scheduleId = parsedValue.scheduleId || parsedValue.id || (parsedValue.data && parsedValue.data.scheduleId);
-                         await bookingService.handleScheduleCancelled(scheduleId);
-                         break;
-                    }
+          case 'PAYMENT_FAILED':
+            await bookingService.handlePaymentFailure(
+              parsedValue.data.paymentOrderId,
+              parsedValue.data.reason
+            );
+            break;
 
-                    default:
-                         logger.warn(`Unknown topic: ${topic}`);
-               }
-          }),
-     });
+          case 'SCHEDULE_CANCELLED': {
+            const scheduleId =
+              parsedValue.data?.scheduleId ||
+              parsedValue.data?.id;
 
-     logger.info('Booking consumer running');
+            await bookingService.handleScheduleCancelled(scheduleId);
+            break;
+          }
+
+          default:
+            logger.warn(`Unknown event type: ${parsedValue.eventType}`, {
+              topic,
+            });
+        }
+      }
+    ),
+  });
+
+  logger.info('Booking consumer running');
 };
 
 module.exports = { start };
