@@ -5,6 +5,17 @@ const { config } = require('.');
 const kafka = new Kafka({
      clientId: config.KAFKA_CLIENT_ID,
      brokers: [config.KAFKA_BROKER || 'localhost:9093'],
+
+     ssl: {
+          ca: [config.KAFKA_CA_CERT],
+     },
+
+     sasl: {
+          mechanism: 'scram-sha-256',
+          username: config.KAFKA_USERNAME,
+          password: config.KAFKA_PASSWORD,
+     },
+
      logLevel: logLevel.ERROR,
      retry: {
           initialRetryTime: 300,
