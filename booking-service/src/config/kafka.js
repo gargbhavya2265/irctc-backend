@@ -4,8 +4,20 @@ const { config } = require('.');
 
 const kafka = new Kafka({
      clientId: config.KAFKA_CLIENT_ID,
-     brokers: [config.KAFKA_BROKER || 'localhost:9093'],
+
+     brokers: [config.KAFKA_BROKER],
+
+     // Aiven Kafka uses TLS + SASL authentication
+     ssl: true,
+
+     sasl: {
+          mechanism: 'scram-sha-256',
+          username: config.KAFKA_USERNAME,
+          password: config.KAFKA_PASSWORD,
+     },
+
      logLevel: logLevel.ERROR,
+
      retry: {
           initialRetryTime: 300,
           retries: 8,
@@ -59,4 +71,12 @@ const disconnectAll = async () => {
      await disconnectConsumer();
 };
 
-module.exports = { kafka, producer, consumer, connectProducer, disconnectProducer, disconnectConsumer, disconnectAll };
+module.exports = {
+     kafka,
+     producer,
+     consumer,
+     connectProducer,
+     disconnectProducer,
+     disconnectConsumer,
+     disconnectAll,
+};
