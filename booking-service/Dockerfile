@@ -3,7 +3,6 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY booking-service/package*.json ./
-
 RUN npm ci
 
 COPY booking-service/prisma ./prisma
@@ -15,4 +14,4 @@ RUN npx prisma generate
 
 EXPOSE 4005
 
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
