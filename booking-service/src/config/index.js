@@ -7,6 +7,7 @@ const config = {
      KAFKA_CLIENT_ID: process.env.KAFKA_CLIENT_ID || 'booking-service',
      KAFKA_USERNAME: process.env.KAFKA_USERNAME,
      KAFKA_PASSWORD: process.env.KAFKA_PASSWORD,
+     KAFKA_CA_CERT: process.env.KAFKA_CA_CERT,
      DATABASE_URL: process.env.DATABASE_URL,
      ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
      REDIS_URL: process.env.REDIS_URL,

@@ -8,7 +8,9 @@ const kafka = new Kafka({
      brokers: [config.KAFKA_BROKER],
 
      // Aiven Kafka uses TLS + SASL authentication
-     ssl: true,
+     ssl: {
+          ca: [config.KAFKA_CA_CERT],
+     },
 
      sasl: {
           mechanism: 'scram-sha-256',
