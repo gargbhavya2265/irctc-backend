@@ -16,6 +16,7 @@ const client = axios.create({
  */
 async function withRetry(fn, maxRetries = 3) {
      let lastError;
+
      for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
                return await fn();
@@ -24,7 +25,6 @@ async function withRetry(fn, maxRetries = 3) {
                // Don't retry client errors (4xx) — only server/network errors
                const status = error.response?.status;
                if (status && status >= 400 && status < 500) throw error;
-
                if (attempt < maxRetries) {
                     const delay = 200 * Math.pow(2, attempt - 1);
                     logger.warn(`Inventory client retry ${attempt}/${maxRetries} after ${delay}ms`, {
@@ -52,15 +52,21 @@ function extractError(error) {
 }
 
 const inventoryClient = {
-     async getAvailability(scheduleId) {
+     async getAvailability(scheduleId, userId) {
           return withRetry(async () => {
-               const { data } = await client.get(`/schedules/${scheduleId}/availability`,{headers:{'x-user-id': userId,},});
-               
+               const { data } = await client.get(
+                    `/schedules/${scheduleId}/availability`,
+                    {
+                         headers: {
+                              'x-user-id': userId,
+                         },
+                    }
+               );
                return data.data;
           });
      },
 
-     async getSeats(scheduleId, filters = {}) {
+     async getSeats(scheduleId, filters = {}, userId) {
           return withRetry(async () => {
                const params = {};
                if (filters.status) params.status = filters.status;
@@ -68,15 +74,12 @@ const inventoryClient = {
                if (filters.fromSeq) params.fromSeq = filters.fromSeq;  // --- SEGMENT BOOKING
                if (filters.toSeq) params.toSeq = filters.toSeq;        // --- SEGMENT BOOKING
 
-               const { data } = await client.get(
-                    `/schedules/${scheduleId}/seats`,
-                    {
+               const { data } = await client.get(`/schedules/${scheduleId}/seats`, {
                     params,
                     headers: {
                          'x-user-id': userId,
                     },
-                    }
-               );
+               });
                return data.data;
           });
      },
@@ -89,8 +92,12 @@ const inventoryClient = {
                     seatIds,
                     userId,
                     ttlSeconds,
-                    fromSeq,  // --- SEGMENT BOOKING
-                    toSeq,    // --- SEGMENT BOOKING
+                    fromSeq,
+                    toSeq,
+               }, {
+                    headers: {
+                         'x-user-id': userId,
+                    },
                });
                return data.data;
           });
@@ -102,8 +109,12 @@ const inventoryClient = {
                     scheduleId,
                     seatIds,
                     userId,
-                    fromSeq,  // --- SEGMENT BOOKING
-                    toSeq,    // --- SEGMENT BOOKING
+                    fromSeq,
+                    toSeq,
+               }, {
+                    headers: {
+                         'x-user-id': userId,
+                    },
                });
                return data.data;
           });
@@ -116,8 +127,12 @@ const inventoryClient = {
                     seatIds,
                     userId,
                     bookingId,
-                    fromSeq,  // --- SEGMENT BOOKING
-                    toSeq,    // --- SEGMENT BOOKING
+                    fromSeq,
+                    toSeq,
+               }, {
+                    headers: {
+                         'x-user-id': userId,
+                    },
                });
                return data.data;
           });
@@ -129,6 +144,10 @@ const inventoryClient = {
                     scheduleId,
                     bookingId,
                     userId,
+               }, {
+                    headers: {
+                         'x-user-id': userId,
+                    },
                });
                return data.data;
           });
