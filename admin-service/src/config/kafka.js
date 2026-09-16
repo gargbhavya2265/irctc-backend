@@ -15,7 +15,7 @@ const kafka = kafkaBroker.length
                rejectUnauthorized: false,
           },
           sasl: {
-               mechanism: 'scram-sha-512',
+               mechanism: 'scram-sha-256',
                username: config.KAFKA_USERNAME,
                password: config.KAFKA_PASSWORD,
           },
