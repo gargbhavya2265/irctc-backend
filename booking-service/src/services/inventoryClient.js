@@ -54,7 +54,8 @@ function extractError(error) {
 const inventoryClient = {
      async getAvailability(scheduleId) {
           return withRetry(async () => {
-               const { data } = await client.get(`/schedules/${scheduleId}/availability`);
+               const { data } = await client.get(`/schedules/${scheduleId}/availability`,{headers:{'x-user-id': userId,},});
+               
                return data.data;
           });
      },
@@ -67,7 +68,15 @@ const inventoryClient = {
                if (filters.fromSeq) params.fromSeq = filters.fromSeq;  // --- SEGMENT BOOKING
                if (filters.toSeq) params.toSeq = filters.toSeq;        // --- SEGMENT BOOKING
 
-               const { data } = await client.get(`/schedules/${scheduleId}/seats`, { params });
+               const { data } = await client.get(
+                    `/schedules/${scheduleId}/seats`,
+                    {
+                    params,
+                    headers: {
+                         'x-user-id': userId,
+                    },
+                    }
+               );
                return data.data;
           });
      },

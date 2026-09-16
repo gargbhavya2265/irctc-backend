@@ -103,7 +103,7 @@ const createBooking = async (userId, scheduleId, seatIds, passengers, idempotenc
      if (cached) return cached;
 
      // 3. Fetch schedule availability and seat details from inventory
-     const availability = await inventoryClient.getAvailability(scheduleId);
+     const availability = await inventoryClient.getAvailability(scheduleId, userId);
      if (availability.status !== 'ACTIVE') {
           throw new BadRequestError('Schedule is not active');
      }
@@ -117,7 +117,7 @@ const createBooking = async (userId, scheduleId, seatIds, passengers, idempotenc
      const seatData = await inventoryClient.getSeats(scheduleId, {
           fromSeq: fromSeq || undefined,
           toSeq: toSeq || undefined,
-     });
+     }, userId);
      const seatMap = new Map(seatData.seats.map(s => [s.seatId, s]));
 
      // Verify all requested seats exist and are available
