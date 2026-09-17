@@ -1,7 +1,11 @@
 const { producer, connectProducer } = require('../../config/kafka');
 
 const logger = require('../../config/logger');
-const { KAFKA_TOPICS } = require('../../../shared/constants/kafka-topics');
+const path = require('path');
+
+const { KAFKA_TOPICS } = require(
+  path.join(process.cwd(), 'shared', 'constants', 'kafka-topics')
+);
 
 class AdminProducer {
   constructor() {
