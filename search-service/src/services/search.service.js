@@ -7,10 +7,9 @@ const logger = require('../config/logger');
 
 /**
  * When admin creates a station, index it for autocomplete.
- * Event shape: { eventType, data: { id, name, code, city, state }, timestamp }
+ * Consumer passes parsedValue.data directly.
  */
-const indexStation = async (event) => {
-     const station = event.data;
+const indexStation = async (station) => {
      if (!station) return;
 
      try {
@@ -24,15 +23,25 @@ const indexStation = async (event) => {
                     city: station.city,
                     state: station.state,
                     suggest: {
-                    input: [station.name,station.code,station.city,station.state].filter(Boolean),
-                    weight: 10,
+                         input: [
+                              station.name,
+                              station.code,
+                              station.city,
+                              station.state
+                         ].filter(Boolean),
+                         weight: 10,
                     },
                },
                refresh: true,
           });
-          logger.info(`Indexed station ${station.name} (${station.code})`);
+
+          logger.info(
+               `Indexed station ${station.name} (${station.code})`
+          );
      } catch (err) {
-          logger.error(`Failed to index station: ${err.message}`);
+          logger.error(
+               `Failed to index station: ${err.message}`
+          );
      }
 };
 
