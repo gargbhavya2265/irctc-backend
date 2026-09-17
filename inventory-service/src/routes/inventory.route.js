@@ -30,7 +30,10 @@ router.get('/schedules/:scheduleId/availability', getScheduleAvailability);
 router.get('/schedules/:scheduleId/seats', userOrInternal, getScheduleSeats);
 
 // Internal: called by booking-service (protected by service key)
-router.post('/seats/lock', internalAuth, lockSeats);
+router.post('/seats/lock', (req, res) => {
+     console.log("🔥 ROUTE REACHED");
+     res.status(200).json({ message: "LOCK ROUTE WORKS" });
+});
 router.post('/seats/unlock', internalAuth, unlockSeats);
 router.post('/seats/confirm', internalAuth, confirmSeats);
 router.post('/seats/cancel-booking', internalAuth, cancelBooking);

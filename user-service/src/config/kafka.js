@@ -19,6 +19,15 @@ const {config} = require('.');
 const kafka = new Kafka({
      clientId: config.KAFKA_CLIENT_ID,//This gives your application a name/identity when communicating with Kafka.
      brokers: [config.KAFKA_BROKER || 'localhost:9093'],//"Where is the Kafka broker running?"
+
+     ssl: true,
+
+     sasl: {
+          mechanism: 'scram-sha-256',
+          username: config.KAFKA_USERNAME,
+          password: config.KAFKA_PASSWORD,
+     },
+
      logLevel: logLevel.ERROR,// This controls how much Kafka-related logging you want
      retry: {  // If Kafka is temporarily unavailable, the client will retry connecting.
           initialRetryTime: 300, // Initially waits around 300ms
