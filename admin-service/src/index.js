@@ -1,3 +1,10 @@
+const fs = require('fs');
+
+console.log('CHECK /app/shared:', fs.existsSync('/app/shared'));
+console.log(
+  'CHECK kafka-topics:',
+  fs.existsSync('/app/shared/constants/kafka-topics.js')
+);
 require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
