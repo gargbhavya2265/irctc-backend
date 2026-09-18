@@ -257,7 +257,7 @@ const getSeats = async (scheduleId, filters = {}) => {
      });
 
      // --- SEGMENT BOOKING: If segment specified, compute per-seat segment availability ---
-     if (filters.fromSeq && filters.toSeq) {
+     if (filters.fromSeq !== undefined && filters.toSeq !== undefined) {
           const fromSeq = parseInt(filters.fromSeq);
           const toSeq = parseInt(filters.toSeq);
 
@@ -334,7 +334,7 @@ const lockSeats = async (scheduleId, seatIds, userId, ttlSeconds, fromSeq, toSeq
                }
 
                // --- SEGMENT BOOKING: Check segment-level availability instead of full-journey ---
-               if (fromSeq && toSeq) {
+               if (fromSeq !== undefined && toSeq !== undefined) {
                     // Check for overlapping segment locks on any of the requested seats
                     const overlapping = await tx.$queryRaw`
                          SELECT "seatId" FROM seat_segment_locks
@@ -381,7 +381,7 @@ const lockSeats = async (scheduleId, seatIds, userId, ttlSeconds, fromSeq, toSeq
                }
 
                // --- SEGMENT BOOKING: Recompute seat statuses from segment locks ---
-               if (fromSeq && toSeq) {
+               if (fromSeq !== undefined && toSeq !== undefined) {
                     // Set lockedBy/lockedAt/lockExpiresAt on seats that didn't have it yet
                     const seatPkIds = seats.map(s => s.id);
                     await tx.$executeRaw`
@@ -481,7 +481,7 @@ const unlockSeats = async (scheduleId, seatIds, userId, fromSeq, toSeq) => {
                }
 
                // --- SEGMENT BOOKING: Segment-aware unlock ---
-               if (fromSeq && toSeq) {
+               if (fromSeq !== undefined && toSeq !== undefined) {
                     // Delete specific segment locks for this user/segment
                     await tx.$executeRaw`
                          DELETE FROM seat_segment_locks
@@ -586,7 +586,7 @@ const confirmSeats = async (scheduleId, seatIds, userId, bookingId, fromSeq, toS
                }
 
                // --- SEGMENT BOOKING: Confirm segment locks if segment params provided ---
-               if (fromSeq && toSeq) {
+               if (fromSeq !== undefined && toSeq !== undefined) {
                     // Transition segment lock rows from LOCKED → BOOKED
                     const updated = await tx.$executeRaw`
                     UPDATE seat_segment_locks
@@ -634,7 +634,7 @@ const confirmSeats = async (scheduleId, seatIds, userId, bookingId, fromSeq, toS
                }
 
                // --- SEGMENT BOOKING: Recompute seat statuses after segment lock transition ---
-               if (fromSeq && toSeq) {
+               if (fromSeq !== undefined && toSeq !== undefined) {
                     const affectedSeatIds = seats.map(s => s.seatId);
                     await recomputeSegmentSeatStatuses(tx, scheduleId, affectedSeatIds);
                     const counts = await recountScheduleAggregates(tx, scheduleId);
@@ -839,3 +839,4 @@ module.exports = {
      recountAndPublish,
      recomputeSegmentSeatStatuses,
 };
+
