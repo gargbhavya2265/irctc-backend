@@ -25,3 +25,7 @@ exports.debugTrains = asyncHandler(async (req, res) => {
      const data = await searchService.getAllTrains();
      res.json({ success: true, count: data.length, data });
 });
+exports.allTrains = asyncHandler(async (req, res) => {
+     const trains = await searchService.getAllTrains();
+     res.json({ success: true, count: trains.length, data: trains });
+});

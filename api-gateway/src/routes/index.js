@@ -206,6 +206,12 @@ router.get(
 );
 
 router.get(
+    '/search/trains/all',
+    endpointRateLimit(60, 60000),
+    searchServiceProxy
+);
+
+router.get(
     '/search/autocomplete',
     endpointRateLimit(120, 60000),
     searchServiceProxy

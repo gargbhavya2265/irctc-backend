@@ -11,5 +11,6 @@ router.get('/autocomplete', ctrl.autocomplete);
 // Debug endpoints
 router.get('/debug/stations', ctrl.debugStations);
 router.get('/debug/trains', ctrl.debugTrains);
+router.get('/trains/all', ctrl.allTrains);
 
 module.exports = router;
