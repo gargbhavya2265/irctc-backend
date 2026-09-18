@@ -5,6 +5,8 @@ const config = {
      LOG_LEVEL: process.env.LOG_LEVEL || 'info',
      KAFKA_BROKER: process.env.KAFKA_BROKER,
      KAFKA_CLIENT_ID: process.env.KAFKA_CLIENT_ID || 'payment-service',
+     KAFKA_USERNAME: process.env.KAFKA_USERNAME,
+     KAFKA_PASSWORD: process.env.KAFKA_PASSWORD,
      DATABASE_URL: process.env.DATABASE_URL,
      ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
      INTERNAL_SERVICE_KEY: process.env.INTERNAL_SERVICE_KEY,
