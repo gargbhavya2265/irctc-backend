@@ -589,24 +589,34 @@ const confirmSeats = async (scheduleId, seatIds, userId, bookingId, fromSeq, toS
                if (fromSeq && toSeq) {
                     // Transition segment lock rows from LOCKED → BOOKED
                     const updated = await tx.$executeRaw`
-                         UPDATE seat_segment_locks
-                         SET status = 'BOOKED', "bookingId" = ${bookingId},
-                             "lockExpiresAt" = NULL,
-                             version = version + 1, "updatedAt" = NOW()
-                         WHERE "scheduleId" = ${scheduleId}
-                         AND "seatId" = ANY(${seatIds}::text[])
-                         AND "lockedBy" = ${userId}
-                         AND "fromSeq" = ${fromSeq}
-                         AND "toSeq" = ${toSeq}
-                         AND status = 'LOCKED'
-                    `;
+                    UPDATE seat_segment_locks
+                    SET status = 'BOOKED', "bookingId" = ${bookingId},
+                    "lockExpiresAt" = NULL,
+                    version = version + 1, "updatedAt" = NOW()
+                    WHERE "scheduleId" = ${scheduleId}
+                    AND "seatId" = ANY(${seatIds}::text[])
+                    AND "lockedBy" = ${userId}
+                    AND "fromSeq" = ${fromSeq}
+                    AND "toSeq" = ${toSeq}
+                    AND status = 'LOCKED'
+               `;
 
-                    if (updated === 0) {
-                         throw new ConflictError(
-                              'Segment lock expired or not found. Please lock seats again.',
-                              'LOCK_EXPIRED'
-                         );
-                    }
+               logger.info('CONFIRM DEBUG', {
+                    scheduleId,
+                    seatIds,
+                    userId,
+                    bookingId,
+                    fromSeq,
+                    toSeq,
+                    updated,
+               });
+
+               if (updated === 0) {
+                    throw new ConflictError(
+                         'Segment lock expired or not found. Please lock seats again.',
+                         'LOCK_EXPIRED'
+                    );
+               }
                } else {
                     // Fallback: full-journey confirmation checks
                     const notLocked = seats.filter(s => s.status !== 'LOCKED');
