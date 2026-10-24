@@ -1,22 +1,17 @@
-const { Client } = require('@elastic/elasticsearch');
+const { Client } = require('@opensearch-project/opensearch');
 const { config } = require('.');
 const logger = require('./logger');
 
 const clientOptions = {
-     node: config.ELASTICSEARCH_URL,
-     auth: {
+    node: config.ELASTICSEARCH_URL,
+    auth: {
         username: config.ELASTICSEARCH_USERNAME,
         password: config.ELASTICSEARCH_PASSWORD,
-     },
+    },
 };
 
-if (config.ELASTICSEARCH_API_KEY) {
-     clientOptions.auth = {
-          apiKey: config.ELASTICSEARCH_API_KEY
-     };
-}
-
 const esClient = new Client(clientOptions);
+
 
 const STATION_INDEX = 'stations';
 const TRAIN_INDEX = 'trains';
