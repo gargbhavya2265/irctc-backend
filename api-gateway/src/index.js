@@ -10,8 +10,10 @@ const { notFound } = require('./middlewares/notFound.middleware');
 const { reqLogger } = require('./middlewares/req.middleware');
 const { corsMiddleware } = require('./middlewares/cors.middleware');
 const routes = require('./routes');
+
 const app = express();
 
+app.set('trust proxy', 1);
 
 app.use(corsMiddleware);
 app.use(helmet({
