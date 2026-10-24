@@ -10,6 +10,8 @@ const config = {
      KAFKA_USERNAME: process.env.KAFKA_USERNAME,
      KAFKA_PASSWORD: process.env.KAFKA_PASSWORD,
      ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
+     ELASTICSEARCH_USERNAME: process.env.ELASTICSEARCH_USERNAME,
+     ELASTICSEARCH_PASSWORD: process.env.ELASTICSEARCH_PASSWORD,
 }
 
 module.exports = { config };

@@ -3,7 +3,11 @@ const { config } = require('.');
 const logger = require('./logger');
 
 const clientOptions = {
-     node: config.ELASTICSEARCH_URL
+     node: config.ELASTICSEARCH_URL,
+     auth: {
+        username: config.ELASTICSEARCH_USERNAME,
+        password: config.ELASTICSEARCH_PASSWORD,
+     },
 };
 
 if (config.ELASTICSEARCH_API_KEY) {
