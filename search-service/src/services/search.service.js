@@ -245,8 +245,10 @@ const searchTrains = async (from, to, date) => {
 
      const result = await esClient.search({
           index: TRAIN_INDEX,
-          query,
-          size: 50,
+          body: {
+               query,
+               size: 50,
+          },
      });
 
      const normalize = (d) => new Date(d).toISOString().slice(0, 10);
@@ -298,8 +300,10 @@ const resolveStation = async (input) => {
      // 1. Try exact code match
      const exactResult = await esClient.search({
           index: STATION_INDEX,
-          query: { term: { code: input.toUpperCase() } },
-          size: 1,
+          body: {
+               query: { term: { code: input.toUpperCase() } },
+               size: 1,
+          },
      });
      if (exactResult.hits.hits.length > 0) return exactResult.hits.hits[0]._source;
 
@@ -307,13 +311,15 @@ const resolveStation = async (input) => {
      try {
           const suggestResult = await esClient.search({
                index: STATION_INDEX,
-               suggest: {
-                    station_suggest: {
-                         prefix: input,
-                         completion: {
-                              field: 'suggest',
-                              fuzzy: { fuzziness: 'AUTO' },
-                              size: 1,
+               body: {
+                    suggest: {
+                         station_suggest: {
+                              prefix: input,
+                              completion: {
+                                   field: 'suggest',
+                                   fuzzy: { fuzziness: 'AUTO' },
+                                   size: 1,
+                              },
                          },
                     },
                },
@@ -327,15 +333,17 @@ const resolveStation = async (input) => {
      // 3. Fuzzy match on name
      const fuzzyResult = await esClient.search({
           index: STATION_INDEX,
-          query: {
-               multi_match: {
-                    query: input,
-                    fields: ['name', 'city'],
-                    fuzziness: 'AUTO',
-                    prefix_length: 1,
+          body: {
+               query: {
+                    multi_match: {
+                         query: input,
+                         fields: ['name', 'city'],
+                         fuzziness: 'AUTO',
+                         prefix_length: 1,
+                    },
                },
+               size: 1,
           },
-          size: 1,
      });
 
      return fuzzyResult.hits.hits.length > 0 ? fuzzyResult.hits.hits[0]._source : null;
@@ -346,16 +354,10 @@ const resolveStation = async (input) => {
  */
 const autocompleteStation = async (prefix) => {
      const result = await esClient.search({
-          index: STATION_INDEX,
-          suggest: {
-               station_suggest: {
-                    prefix,
-                    completion: {
-                         field: 'suggest',
-                         fuzzy: { fuzziness: 'AUTO' },
-                         size: 10,
-                    },
-               },
+          index: STATION_INDEX, // getAllTrains mein TRAIN_INDEX
+          body: {
+               query: { match_all: {} },
+               size: 100,
           },
      });
 
@@ -373,8 +375,10 @@ const autocompleteStation = async (prefix) => {
 const getAllStations = async () => {
      const result = await esClient.search({
           index: STATION_INDEX,
-          query: { match_all: {} },
-          size: 100,
+          body: {
+               query: { match_all: {} },
+               size: 100,
+          },
      });
      return result.hits.hits.map((h) => h._source);
 };
@@ -385,8 +389,10 @@ const getAllStations = async () => {
 const getAllTrains = async () => {
      const result = await esClient.search({
           index: TRAIN_INDEX,
-          query: { match_all: {} },
-          size: 100,
+          body: {
+               query: { match_all: {} },
+               size: 100,
+          },
      });
      return result.hits.hits.map((h) => h._source);
 };
