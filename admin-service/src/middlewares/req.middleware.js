@@ -1,3 +1,9 @@
+/*
+    “It performs common processing on incoming requests before they reach the controller or route handler.”
+
+     Simple: Does common request-level processing.
+*/
+
 const logger = require('../config/logger');
 
 const reqLogger = (req, res, next) => {

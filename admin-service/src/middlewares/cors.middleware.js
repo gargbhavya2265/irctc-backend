@@ -1,3 +1,9 @@
+/*
+    “It configures CORS (Cross-Origin Resource Sharing) to control which origins are allowed to access the backend APIs.”
+
+     In simple words: Controls who can access the API from another origin/domain.
+*/
+
 const cors = require('cors');
 const { config } = require('../config');
 

@@ -1,4 +1,9 @@
-// middlewares/error.middleware.js
+/*
+    “It provides centralized error handling by catching errors and sending a consistent response to the client.”
+
+     Simple: Handles errors in one central place.
+*/
+
 const { AppError } = require('../utils/error');
 const {config} = require('../config');
 const logger = require('../config/logger');

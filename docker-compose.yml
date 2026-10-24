@@ -1,4 +1,4 @@
-name: irctc-backend
+﻿name: irctc-backend
 
 services:
   postgres:
@@ -62,7 +62,7 @@ services:
     container_name: kafka
     restart: always
     depends_on:
-      - zookeeper>
+      - zookeeper
     ports:
       - "9092:9092"
       - "9093:9093"
@@ -295,3 +295,4 @@ volumes:
 networks:
   irctc-network:
     driver: bridge
+

@@ -354,7 +354,11 @@ const handlePaymentSuccess = async (paymentOrderId, gatewayPaymentId, amount) =>
                return;
           }
 
-          logger.error(`Failed to confirm booking ${booking.id}`, { error: error.message });
+          logger.error(`Failed to confirm booking ${booking.id}`, {
+               error: error.message,
+               code: error.code,
+               stack: error.stack,
+          });
 
           // Compensate: refund payment and release seats
           await saga.compensateAll(booking, seatIds);

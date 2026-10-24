@@ -1,3 +1,9 @@
+/*
+    “It manages the overall application configuration by loading and organizing environment variables and other common configuration settings used across the service.”
+
+    In simple words: Central place for service configuration.
+*/
+
 const path = require('path');
 
 require('dotenv').config({

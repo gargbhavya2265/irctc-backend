@@ -1,3 +1,9 @@
+/*
+    “It extracts the authenticated user's information from the request and makes it available to the rest of the application.”
+
+     Simple: Identifies which user is making the request.
+*/
+
 const { UnauthorizedError } = require('../utils/error');
 
 /**

@@ -2,20 +2,27 @@ const { Kafka, logLevel } = require('kafkajs');
 const logger = require('./logger');
 const { config } = require('.');
 
-const kafka = new Kafka({
+const isLocalKafka = config.KAFKA_BROKER === 'kafka:9092';
+
+const kafkaOptions = {
      clientId: config.KAFKA_CLIENT_ID,
      brokers: [config.KAFKA_BROKER],
-     ssl: {
+     logLevel: logLevel.ERROR,
+     retry: { initialRetryTime: 300, retries: 8, maxRetryTime: 30000 },
+};
+
+if (!isLocalKafka) {
+     kafkaOptions.ssl = {
           rejectUnauthorized: false,
-     },
-     sasl: {
+     };
+     kafkaOptions.sasl = {
           mechanism: 'scram-sha-512',
           username: config.KAFKA_USERNAME,
           password: config.KAFKA_PASSWORD,
-     },
-     logLevel: logLevel.ERROR,
-     retry: { initialRetryTime: 300, retries: 8, maxRetryTime: 30000 },
-});
+     };
+}
+
+const kafka = new Kafka(kafkaOptions);
 
 const consumer = kafka.consumer({
      groupId: 'search-service-group-v2',

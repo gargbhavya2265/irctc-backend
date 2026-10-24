@@ -1,3 +1,15 @@
+/*
+  If interviewer asks:
+
+  "What does this Inventory Consumer do?"
+
+  You can say:
+
+  "This is a Kafka consumer in my Inventory Service. It subscribes to the Admin Events topic and listens for admin-related events. When it receives a SCHEDULE_CREATED event, it calls the inventory service to initialize inventory for that schedule. When it receives a SCHEDULE_CANCELLED event, it cancels the corresponding inventory. Other admin events are ignored. I also use a DLQ wrapper so that if message processing fails, the failed event can be published to a Dead Letter Queue for later investigation or reprocessing."
+
+  That's a very solid interview answer.
+*/
+
 const { consumer, producer, connectProducer } = require('../../config/kafka');
 
 const logger = require('../../config/logger');

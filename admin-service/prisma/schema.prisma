@@ -13,6 +13,7 @@ datasource db {
   provider = "postgresql"
 }
 
+// Prisma me model basically database table ko represent karta hai.
 model Station {
   id        String   @id @default(uuid())
   name      String   @unique // "New Delhi"

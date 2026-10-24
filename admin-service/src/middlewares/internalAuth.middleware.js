@@ -1,3 +1,9 @@
+/*
+    “It authenticates requests coming from trusted internal services by verifying the required internal credentials.”
+
+     Simple: Protects communication between backend services.
+*/
+
 const { config } = require('../config');
 const { ForbiddenError } = require('../utils/error');
 

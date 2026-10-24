@@ -1,3 +1,9 @@
+/*
+    “It sets up and manages the Prisma client, which is used by the application to communicate with the PostgreSQL database.”
+
+     In simple words: Creates the database connection/client using Prisma.
+*/
+
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { config } = require('./');

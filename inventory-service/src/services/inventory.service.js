@@ -16,7 +16,8 @@ const initializeInventory = async (eventData) => {
      }
 
      const eventKey = `SCHEDULE_CREATED:${scheduleId}`;
-
+     // What is idempotencyRecord ?
+     // It is basically a database table that stores information about events/requests that have already been processed.
      const existing = await prisma.idempotencyRecord.findUnique({ where: { eventKey } });
      if (existing) {
           logger.info(`Duplicate event skipped: ${eventKey}`);
@@ -24,7 +25,7 @@ const initializeInventory = async (eventData) => {
      }
 
      const totalSeats = seats.length;
-
+     // Use a transaction when multiple database operations together represent ONE logical operation, and either ALL of them should succeed or NONE of them should.
      await prisma.$transaction(async (tx) => {
           const schedule = await tx.scheduleInventory.create({
                data: {

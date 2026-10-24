@@ -1,3 +1,9 @@
+/*
+    “It configures the application logger, which is used to record important information such as requests, errors, events, and application status.”
+
+     In simple words: Used for logging and debugging the application.
+*/
+
 const winston = require('winston');
 const {config} = require('.');
 

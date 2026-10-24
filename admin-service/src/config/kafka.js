@@ -1,3 +1,7 @@
+/*
+     This file is responsible for configuring(setting up) the Kafka connection and creating and managing the Kafka Producer, which is used to send messages or events to Kafka topics.
+*/
+
 const { Kafka, logLevel } = require('kafkajs');
 const logger = require('./logger');
 const { config } = require('.');
