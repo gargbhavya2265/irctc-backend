@@ -1,9 +1,12 @@
 const { esClient, TRAIN_INDEX, STATION_INDEX } = require('../config/elasticsearch');
 const logger = require('../config/logger');
 
-// ═══════════════════════════════════════════════════
+const getResponseBody = (response) => response?.body ?? response;
+const search = async (params) => getResponseBody(await esClient.search(params));
+
+// ---------------------------------------------------
 // INDEX OPERATIONS (called by Kafka consumer)
-// ═══════════════════════════════════════════════════
+// ---------------------------------------------------
 
 /**
  * When admin creates a station, index it for autocomplete.
@@ -247,9 +250,9 @@ const updateSeatAvailability = async (event) => {
      }
 };
 
-// ═══════════════════════════════════════════════════
+// ---------------------------------------------------
 // SEARCH OPERATIONS (called by API)
-// ═══════════════════════════════════════════════════
+// ---------------------------------------------------
 
 /**
  * Search trains running between two stations.
@@ -299,7 +302,7 @@ const searchTrains = async (from, to, date) => {
           },
      };
 
-     const result = await esClient.search({
+     const result = await search({
           index: TRAIN_INDEX,
           body: {
                query,
@@ -380,7 +383,7 @@ const resolveStation = async (input) => {
      if (!input || typeof input !== 'string') return null;
 
      // 1. Exact station code.
-     const exactResult = await esClient.search({
+     const exactResult = await search({
           index: STATION_INDEX,
           body: {
                query: {
@@ -398,7 +401,7 @@ const resolveStation = async (input) => {
 
      // 2. Completion suggester.
      try {
-          const suggestResult = await esClient.search({
+          const suggestResult = await search({
                index: STATION_INDEX,
                body: {
                     suggest: {
@@ -427,7 +430,7 @@ const resolveStation = async (input) => {
      }
 
      // 3. Fuzzy match on station name/city.
-     const fuzzyResult = await esClient.search({
+     const fuzzyResult = await search({
           index: STATION_INDEX,
           body: {
                query: {
@@ -456,7 +459,7 @@ const autocompleteStation = async (prefix) => {
      }
 
      try {
-          const result = await esClient.search({
+          const result = await search({
                index: STATION_INDEX,
                body: {
                     suggest: {
@@ -490,7 +493,7 @@ const autocompleteStation = async (prefix) => {
  * Get all indexed stations.
  */
 const getAllStations = async () => {
-     const result = await esClient.search({
+     const result = await search({
           index: STATION_INDEX,
           body: {
                query: {
@@ -507,7 +510,7 @@ const getAllStations = async () => {
  * Get all indexed trains.
  */
 const getAllTrains = async () => {
-     const result = await esClient.search({
+     const result = await search({
           index: TRAIN_INDEX,
           body: {
                query: {
