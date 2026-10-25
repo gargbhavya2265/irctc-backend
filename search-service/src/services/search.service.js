@@ -2,12 +2,11 @@ const { esClient, TRAIN_INDEX, STATION_INDEX } = require('../config/elasticsearc
 const logger = require('../config/logger');
 
 // ═══════════════════════════════════════════════════
-//  INDEX OPERATIONS (called by Kafka consumer)
+// INDEX OPERATIONS (called by Kafka consumer)
 // ═══════════════════════════════════════════════════
 
 /**
  * When admin creates a station, index it for autocomplete.
- * Consumer passes parsedValue.data directly.
  */
 const indexStation = async (station) => {
      if (!station) return;
@@ -27,7 +26,7 @@ const indexStation = async (station) => {
                               station.name,
                               station.code,
                               station.city,
-                              station.state
+                              station.state,
                          ].filter(Boolean),
                          weight: 10,
                     },
@@ -35,27 +34,35 @@ const indexStation = async (station) => {
                refresh: true,
           });
 
-          logger.info(
-               `Indexed station ${station.name} (${station.code})`
-          );
+          logger.info(`Indexed station ${station.name} (${station.code})`);
      } catch (err) {
-          logger.error(
-               `Failed to index station: ${err.message}`
-          );
+          logger.error(`Failed to index station: ${err.message}`);
      }
 };
 
 /**
- * When admin creates a route, we get enriched payload with train+seats+routeStations.
+ * Index train route and its stations.
  */
 const indexTrainRoute = async (routeEvent) => {
-     const { train, routeStations } = routeEvent;
-     if (!train || !routeStations) return;
+     if (!routeEvent) return;
 
-     const seatSummary = { total: 0, LOWER: 0, MIDDLE: 0, UPPER: 0, SIDE_LOWER: 0, SIDE_UPPER: 0 };
-     (train.seats || []).forEach((s) => {
+     const { train, routeStations } = routeEvent;
+     if (!train || !Array.isArray(routeStations)) return;
+
+     const seatSummary = {
+          total: 0,
+          LOWER: 0,
+          MIDDLE: 0,
+          UPPER: 0,
+          SIDE_LOWER: 0,
+          SIDE_UPPER: 0,
+     };
+
+     (train.seats || []).forEach((seat) => {
           seatSummary.total++;
-          if (seatSummary[s.seatType] !== undefined) seatSummary[s.seatType]++;
+          if (seatSummary[seat.seatType] !== undefined) {
+               seatSummary[seat.seatType]++;
+          }
      });
 
      const doc = {
@@ -75,37 +82,52 @@ const indexTrainRoute = async (routeEvent) => {
           seatSummary,
      };
 
-     await esClient.index({
-          index: TRAIN_INDEX,
-          id: train.id,
-          document: doc,
-          refresh: true,
-     });
-
-     // Also index/update stations for autocomplete
-     for (const rs of routeStations) {
+     try {
           await esClient.index({
-               index: STATION_INDEX,
-               id: rs.station.id,
-               document: {
-                    stationId: rs.station.id,
-                    name: rs.station.name,
-                    code: rs.station.code,
-                    city: rs.station.city,
-                    suggest: {
-                         input: [rs.station.name, rs.station.code, rs.station.city].filter(Boolean),
-                         weight: 10,
-                    },
-               },
+               index: TRAIN_INDEX,
+               id: train.id,
+               document: doc,
                refresh: true,
           });
-     }
 
-     logger.info(`Indexed train ${train.trainNumber} with ${routeStations.length} stations`);
+          // Also index/update stations for autocomplete.
+          for (const rs of routeStations) {
+               if (!rs.station) continue;
+
+               await esClient.index({
+                    index: STATION_INDEX,
+                    id: rs.station.id,
+                    document: {
+                         stationId: rs.station.id,
+                         name: rs.station.name,
+                         code: rs.station.code,
+                         city: rs.station.city,
+                         state: rs.station.state,
+                         suggest: {
+                              input: [
+                                   rs.station.name,
+                                   rs.station.code,
+                                   rs.station.city,
+                                   rs.station.state,
+                              ].filter(Boolean),
+                              weight: 10,
+                         },
+                    },
+                    refresh: true,
+               });
+          }
+
+          logger.info(
+               `Indexed train ${train.trainNumber} with ${routeStations.length} stations`
+          );
+     } catch (err) {
+          logger.error(`Failed to index train route: ${err.message}`);
+          throw err;
+     }
 };
 
 /**
- * When admin creates a schedule, add it to the train's schedules array.
+ * Add schedule to the train's schedules array.
  */
 const indexSchedule = async (scheduleEvent) => {
      const { scheduleId, trainId, departureDate, status, seats } = scheduleEvent;
@@ -118,11 +140,14 @@ const indexSchedule = async (scheduleEvent) => {
                id: trainId,
                script: {
                     source: `
-            if (ctx._source.schedules == null) { ctx._source.schedules = []; }
-            // Remove existing schedule with same id (idempotent)
-            ctx._source.schedules.removeIf(s -> s.scheduleId == params.scheduleId);
-            ctx._source.schedules.add(params.newSchedule);
-          `,
+                         if (ctx._source.schedules == null) {
+                              ctx._source.schedules = [];
+                         }
+                         ctx._source.schedules.removeIf(
+                              s -> s.scheduleId == params.scheduleId
+                         );
+                         ctx._source.schedules.add(params.newSchedule);
+                    `,
                     params: {
                          scheduleId,
                          newSchedule: {
@@ -137,15 +162,17 @@ const indexSchedule = async (scheduleEvent) => {
                },
                refresh: true,
           });
+
           logger.info(`Indexed schedule ${scheduleId} for train ${trainId}`);
      } catch (err) {
-          logger.warn(`Could not index schedule for train ${trainId}: ${err.message}`);
+          logger.warn(
+               `Could not index schedule for train ${trainId}: ${err.message}`
+          );
      }
 };
 
 /**
- * When admin cancels a schedule, update its status in ES.
- * Event shape: { eventType, data: { id, trainId, status: 'CANCELLED', ... }, timestamp }
+ * Update cancelled schedule status.
  */
 const cancelSchedule = async (event) => {
      const schedule = event.data;
@@ -157,26 +184,31 @@ const cancelSchedule = async (event) => {
                id: schedule.trainId,
                script: {
                     source: `
-            if (ctx._source.schedules != null) {
-              for (def s : ctx._source.schedules) {
-                if (s.scheduleId == params.scheduleId) {
-                  s.status = 'CANCELLED';
-                }
-              }
-            }
-          `,
-                    params: { scheduleId: schedule.id },
+                         if (ctx._source.schedules != null) {
+                              for (def s : ctx._source.schedules) {
+                                   if (s.scheduleId == params.scheduleId) {
+                                        s.status = 'CANCELLED';
+                                   }
+                              }
+                         }
+                    `,
+                    params: {
+                         scheduleId: schedule.id,
+                    },
                },
                refresh: true,
           });
-          logger.info(`Cancelled schedule ${schedule.id} for train ${schedule.trainId}`);
+
+          logger.info(
+               `Cancelled schedule ${schedule.id} for train ${schedule.trainId}`
+          );
      } catch (err) {
           logger.warn(`Could not cancel schedule: ${err.message}`);
      }
 };
 
 /**
- * When inventory changes (seat booked/released), update availability counts.
+ * Update seat availability.
  */
 const updateSeatAvailability = async (event) => {
      const { scheduleId, trainId, available, locked, booked } = event;
@@ -187,40 +219,52 @@ const updateSeatAvailability = async (event) => {
                id: trainId,
                script: {
                     source: `
-            if (ctx._source.schedules != null) {
-              for (def s : ctx._source.schedules) {
-                if (s.scheduleId == params.scheduleId) {
-                  s.available = params.available;
-                  s.locked    = params.locked;
-                  s.booked    = params.booked;
-                }
-              }
-            }
-          `,
-                    params: { scheduleId, available: available || 0, locked: locked || 0, booked: booked || 0 },
+                         if (ctx._source.schedules != null) {
+                              for (def s : ctx._source.schedules) {
+                                   if (s.scheduleId == params.scheduleId) {
+                                        s.available = params.available;
+                                        s.locked = params.locked;
+                                        s.booked = params.booked;
+                                   }
+                              }
+                         }
+                    `,
+                    params: {
+                         scheduleId,
+                         available: available ?? 0,
+                         locked: locked ?? 0,
+                         booked: booked ?? 0,
+                    },
                },
                refresh: true,
           });
+
           logger.info(`Updated availability for schedule ${scheduleId}`);
      } catch (err) {
-          logger.warn(`Could not update availability: ${err.message}`);
+          logger.warn(
+               `Could not update availability for schedule ${scheduleId}: ${err.message}`
+          );
      }
 };
 
 // ═══════════════════════════════════════════════════
-//  SEARCH OPERATIONS (called by API)
+// SEARCH OPERATIONS (called by API)
 // ═══════════════════════════════════════════════════
 
 /**
- * Search trains running between two stations on a given date.
- * Supports fuzzy matching on station names.
+ * Search trains running between two stations.
  */
 const searchTrains = async (from, to, date) => {
      const fromStation = await resolveStation(from);
      const toStation = await resolveStation(to);
 
-     if (!fromStation) return { trains: [], message: `Station "${from}" not found` };
-     if (!toStation) return { trains: [], message: `Station "${to}" not found` };
+     if (!fromStation) {
+          return { trains: [], message: `Station "${from}" not found` };
+     }
+
+     if (!toStation) {
+          return { trains: [], message: `Station "${to}" not found` };
+     }
 
      const query = {
           bool: {
@@ -228,15 +272,27 @@ const searchTrains = async (from, to, date) => {
                     {
                          nested: {
                               path: 'route',
-                              query: { term: { 'route.stationId': fromStation.stationId } },
-                              inner_hits: { name: 'from_station' },
+                              query: {
+                                   term: {
+                                        'route.stationId': fromStation.stationId,
+                                   },
+                              },
+                              inner_hits: {
+                                   name: 'from_station',
+                              },
                          },
                     },
                     {
                          nested: {
                               path: 'route',
-                              query: { term: { 'route.stationId': toStation.stationId } },
-                              inner_hits: { name: 'to_station' },
+                              query: {
+                                   term: {
+                                        'route.stationId': toStation.stationId,
+                                   },
+                              },
+                              inner_hits: {
+                                   name: 'to_station',
+                              },
                          },
                     },
                ],
@@ -251,32 +307,51 @@ const searchTrains = async (from, to, date) => {
           },
      });
 
-     const normalize = (d) => new Date(d).toISOString().slice(0, 10);
+     const normalize = (value) => new Date(value).toISOString().slice(0, 10);
 
      const trains = result.hits.hits
           .map((hit) => {
                const src = hit._source;
-               const fromHit = hit.inner_hits.from_station.hits.hits[0]?._source;
-               const toHit = hit.inner_hits.to_station.hits.hits[0]?._source;
+               const fromHit = hit.inner_hits?.from_station?.hits?.hits?.[0]?._source;
+               const toHit = hit.inner_hits?.to_station?.hits?.hits?.[0]?._source;
 
-               if (!fromHit || !toHit || fromHit.sequenceNumber >= toHit.sequenceNumber) {
+               if (
+                    !fromHit ||
+                    !toHit ||
+                    fromHit.sequenceNumber >= toHit.sequenceNumber
+               ) {
                     return null;
                }
 
                let scheduleInfo = null;
-               if (date && src.schedules && src.schedules.length > 0) {
-                    scheduleInfo = src.schedules.find(
-                         (s) => s.status === 'ACTIVE' && normalize(s.departureDate) === date
-                    ) || null;
+
+               if (date && src.schedules?.length > 0) {
+                    scheduleInfo =
+                         src.schedules.find(
+                              (schedule) =>
+                                   schedule.status === 'ACTIVE' &&
+                                   normalize(schedule.departureDate) === date
+                         ) || null;
                }
 
                return {
                     trainId: src.trainId,
                     trainNumber: src.trainNumber,
                     trainName: src.trainName,
-                    // --- SEGMENT BOOKING: Added stationId and sequenceNumber to from/to for segment-aware booking ---
-                    from: { name: fromHit.stationName, code: fromHit.stationCode, departure: fromHit.departureTime, stationId: fromHit.stationId, sequenceNumber: fromHit.sequenceNumber },
-                    to: { name: toHit.stationName, code: toHit.stationCode, arrival: toHit.arrivalTime, stationId: toHit.stationId, sequenceNumber: toHit.sequenceNumber },
+                    from: {
+                         name: fromHit.stationName,
+                         code: fromHit.stationCode,
+                         departure: fromHit.departureTime,
+                         stationId: fromHit.stationId,
+                         sequenceNumber: fromHit.sequenceNumber,
+                    },
+                    to: {
+                         name: toHit.stationName,
+                         code: toHit.stationCode,
+                         arrival: toHit.arrivalTime,
+                         stationId: toHit.stationId,
+                         sequenceNumber: toHit.sequenceNumber,
+                    },
                     seatSummary: src.seatSummary,
                     schedule: scheduleInfo,
                };
@@ -284,8 +359,14 @@ const searchTrains = async (from, to, date) => {
           .filter(Boolean);
 
      return {
-          from: { resolved: fromStation.name, code: fromStation.code },
-          to: { resolved: toStation.name, code: toStation.code },
+          from: {
+               resolved: fromStation.name,
+               code: fromStation.code,
+          },
+          to: {
+               resolved: toStation.name,
+               code: toStation.code,
+          },
           date: date || 'any',
           count: trains.length,
           trains,
@@ -293,50 +374,65 @@ const searchTrains = async (from, to, date) => {
 };
 
 /**
- * Fuzzy-resolve a station name/code to its ID.
- * Three strategies: exact code → completion suggester → fuzzy match
+ * Resolve station by exact code, completion suggester, then fuzzy match.
  */
 const resolveStation = async (input) => {
-     // 1. Try exact code match
+     if (!input || typeof input !== 'string') return null;
+
+     // 1. Exact station code.
      const exactResult = await esClient.search({
           index: STATION_INDEX,
           body: {
-               query: { term: { code: input.toUpperCase() } },
+               query: {
+                    term: {
+                         code: input.trim().toUpperCase(),
+                    },
+               },
                size: 1,
           },
      });
-     if (exactResult.hits.hits.length > 0) return exactResult.hits.hits[0]._source;
 
-     // 2. Try completion suggester (handles typos like "dehli" → "Delhi")
+     if (exactResult.hits.hits.length > 0) {
+          return exactResult.hits.hits[0]._source;
+     }
+
+     // 2. Completion suggester.
      try {
           const suggestResult = await esClient.search({
                index: STATION_INDEX,
                body: {
                     suggest: {
                          station_suggest: {
-                              prefix: input,
+                              prefix: input.trim(),
                               completion: {
                                    field: 'suggest',
-                                   fuzzy: { fuzziness: 'AUTO' },
+                                   fuzzy: {
+                                        fuzziness: 'AUTO',
+                                   },
                                    size: 1,
                               },
                          },
                     },
                },
           });
-          const options = suggestResult.suggest?.station_suggest?.[0]?.options || [];
-          if (options.length > 0) return options[0]._source;
+
+          const options =
+               suggestResult.suggest?.station_suggest?.[0]?.options || [];
+
+          if (options.length > 0) {
+               return options[0]._source;
+          }
      } catch (err) {
           logger.warn(`Suggest fallback failed: ${err.message}`);
      }
 
-     // 3. Fuzzy match on name
+     // 3. Fuzzy match on station name/city.
      const fuzzyResult = await esClient.search({
           index: STATION_INDEX,
           body: {
                query: {
                     multi_match: {
-                         query: input,
+                         query: input.trim(),
                          fields: ['name', 'city'],
                          fuzziness: 'AUTO',
                          prefix_length: 1,
@@ -346,55 +442,82 @@ const resolveStation = async (input) => {
           },
      });
 
-     return fuzzyResult.hits.hits.length > 0 ? fuzzyResult.hits.hits[0]._source : null;
+     return fuzzyResult.hits.hits.length > 0
+          ? fuzzyResult.hits.hits[0]._source
+          : null;
 };
 
 /**
  * Autocomplete station names as user types.
  */
 const autocompleteStation = async (prefix) => {
-     const result = await esClient.search({
-          index: STATION_INDEX, // getAllTrains mein TRAIN_INDEX
-          body: {
-               query: { match_all: {} },
-               size: 100,
-          },
-     });
+     if (!prefix || typeof prefix !== 'string' || !prefix.trim()) {
+          return [];
+     }
 
-     const options = result.suggest.station_suggest[0]?.options || [];
-     return options.map((o) => ({
-          name: o._source.name,
-          code: o._source.code,
-          stationId: o._source.stationId,
-     }));
+     try {
+          const result = await esClient.search({
+               index: STATION_INDEX,
+               body: {
+                    suggest: {
+                         station_suggest: {
+                              prefix: prefix.trim(),
+                              completion: {
+                                   field: 'suggest',
+                                   skip_duplicates: true,
+                                   size: 10,
+                              },
+                         },
+                    },
+               },
+          });
+
+          const options =
+               result.suggest?.station_suggest?.[0]?.options || [];
+
+          return options.map((option) => ({
+               name: option._source.name,
+               code: option._source.code,
+               stationId: option._source.stationId,
+          }));
+     } catch (err) {
+          logger.error(`Station autocomplete failed: ${err.message}`);
+          throw err;
+     }
 };
 
 /**
- * Debug: get all indexed stations
+ * Get all indexed stations.
  */
 const getAllStations = async () => {
      const result = await esClient.search({
           index: STATION_INDEX,
           body: {
-               query: { match_all: {} },
+               query: {
+                    match_all: {},
+               },
                size: 100,
           },
      });
-     return result.hits.hits.map((h) => h._source);
+
+     return result.hits.hits.map((hit) => hit._source);
 };
 
 /**
- * Debug: get all indexed trains
+ * Get all indexed trains.
  */
 const getAllTrains = async () => {
      const result = await esClient.search({
           index: TRAIN_INDEX,
           body: {
-               query: { match_all: {} },
+               query: {
+                    match_all: {},
+               },
                size: 100,
           },
      });
-     return result.hits.hits.map((h) => h._source);
+
+     return result.hits.hits.map((hit) => hit._source);
 };
 
 module.exports = {

@@ -26,10 +26,12 @@ const SCHEDULE_INDEX = 'schedules';
  */
 const initIndices = async () => {
      // ── Station index (for autocomplete) ──
-     const stationExists = await esClient.indices.exists({ index: STATION_INDEX });
+     const stationResponse = await esClient.indices.exists({ index: STATION_INDEX });
+     const stationExists = stationResponse.body ?? stationResponse;
      if (!stationExists) {
           await esClient.indices.create({
                index: STATION_INDEX,
+ 	body: {
                settings: {
                     analysis: {
                          analyzer: {
@@ -63,16 +65,19 @@ const initIndices = async () => {
                          suggest: { type: 'completion' },
                     },
                },
+	},
           });
           logger.info('Station index created');
      }
 
      // ── Train index ──
-     const trainExists = await esClient.indices.exists({ index: TRAIN_INDEX });
+     const trainResponse = await esClient.indices.exists({ index: TRAIN_INDEX });
+     const trainExists = trainResponse.body ?? trainResponse;
      if (!trainExists) {
           await esClient.indices.create({
                index: TRAIN_INDEX,
-               mappings: {
+               body: {
+		mappings: {
                     properties: {
                          trainId: { type: 'keyword' },
                          trainNumber: { type: 'keyword' },
@@ -112,14 +117,16 @@ const initIndices = async () => {
                          },
                     },
                },
-          });
+	},
+      });
           logger.info('Train index created');
      }
 };
 
 const recreateIndices = async () => {
      for (const index of [STATION_INDEX, TRAIN_INDEX]) {
-          const exists = await esClient.indices.exists({ index });
+          const existsResponse = await esClient.indices.exists({ index });
+	  const exists = existsResponse.body ?? existsResponse;
           if (exists) {
                await esClient.indices.delete({ index });
                logger.info(`Deleted index: ${index}`);
