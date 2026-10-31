@@ -13,6 +13,10 @@ const {
      cancelBooking,
 } = require('../controllers/inventory.controller');
 
+const {
+     getSchedulesSnapshot,
+} = require('../controllers/inventory.snapshot.controller');
+
 const router = express.Router();
 
 // Allows either user context (from gateway) or internal service key (from booking-service)
@@ -26,6 +30,13 @@ function userOrInternal(req, res, next) {
 
      return getUserContext(req, res, next);
 }
+
+// Internal: read-only snapshot of all schedule inventories
+router.get(
+     '/internal/schedules/snapshot',
+     internalAuth,
+     getSchedulesSnapshot
+);
 
 // Public: aggregate availability (used by search results)
 router.get('/schedules/:scheduleId/availability', getScheduleAvailability);
