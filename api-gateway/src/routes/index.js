@@ -64,6 +64,17 @@ router.post(
     userServiceProxy
 );
 
+router.post(
+    '/users/auth/forgot-password',
+    endpointRateLimit(5, 3600000),
+    userServiceProxy
+);
+router.post(
+    '/users/auth/reset-password',
+    endpointRateLimit(10, 3600000),
+    userServiceProxy
+);
+
 // ===========================
 // PRIVATE USER ROUTES
 // ===========================

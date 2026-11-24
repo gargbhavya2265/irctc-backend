@@ -32,6 +32,8 @@ const isAuthEndpoint = [
   '/users/auth/send-otp',
   '/users/auth/verify-otp',
   '/users/auth/google-auth',
+  '/users/auth/forgot-password',
+  '/users/auth/reset-password',
 ].some((endpoint) => requestUrl.includes(endpoint));
 
 if (
@@ -54,7 +56,7 @@ if (
         return client(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
-        // Clear auth state — will be picked up by store
+        // Clear auth state â€” will be picked up by store
         window.dispatchEvent(new Event('auth:logout'));
         return Promise.reject(refreshError);
       } finally {
