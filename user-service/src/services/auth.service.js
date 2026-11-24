@@ -65,6 +65,7 @@ const login = async(email, password, deviceId) =>{
           );
      }
      const doesPasswordMatch = await bcrypt.compare(password, existingUser.password);
+     logger.info('[AUTH DIAGNOSTIC] Password comparison result: ' + doesPasswordMatch);
      if(!doesPasswordMatch){
           throw new UnauthorizedError("Invalid email or password", "INVALID_CREDENTIALS");
      }
