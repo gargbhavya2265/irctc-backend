@@ -11,6 +11,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["admin_service"]
 }
 
 // Prisma me model basically database table ko represent karta hai.
@@ -27,7 +28,8 @@ model Station {
 
   @@index([name])
   @@index([code])
-  @@map("stations")
+  @@map("stations")
+  @@schema("admin_service")
 }
 
 model Train {
@@ -43,7 +45,8 @@ model Train {
   route     Route?
   schedules Schedule[]
 
-  @@map("trains")
+  @@map("trains")
+  @@schema("admin_service")
 }
 
 enum SeatType {
@@ -52,6 +55,7 @@ enum SeatType {
   UPPER
   SIDE_LOWER
   SIDE_UPPER
+  @@schema("admin_service")
 }
 
 model Seat {
@@ -64,7 +68,8 @@ model Seat {
   train Train @relation(fields: [trainId], references: [id], onDelete: Cascade)
 
   @@unique([trainId, seatNumber])
-  @@map("seats")
+  @@map("seats")
+  @@schema("admin_service")
 }
 
 model Route {
@@ -74,7 +79,8 @@ model Route {
   train         Train          @relation(fields: [trainId], references: [id], onDelete: Cascade)
   routeStations RouteStation[]
 
-  @@map("routes")
+  @@map("routes")
+  @@schema("admin_service")
 }
 
 model RouteStation {
@@ -91,7 +97,8 @@ model RouteStation {
 
   @@unique([routeId, sequenceNumber])
   @@unique([routeId, stationId])
-  @@map("route_stations")
+  @@map("route_stations")
+  @@schema("admin_service")
 }
 
 model Schedule {
@@ -105,10 +112,12 @@ model Schedule {
   train Train @relation(fields: [trainId], references: [id], onDelete: Cascade)
 
   @@unique([trainId, departureDate])
-  @@map("schedules")
+  @@map("schedules")
+  @@schema("admin_service")
 }
 
 enum ScheduleStatus {
   ACTIVE
   CANCELLED
+  @@schema("admin_service")
 }
