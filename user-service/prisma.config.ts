@@ -4,12 +4,13 @@ import { defineConfig } from "prisma/config";
 
 const databaseUrl = process.env["DATABASE_URL"];
 
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is not configured");
-}
+const datasourceUrl = databaseUrl
+  ? new URL(databaseUrl)
+  : undefined;
 
-const datasourceUrl = new URL(databaseUrl);
-datasourceUrl.searchParams.set("schema", "user_service");
+if (datasourceUrl) {
+  datasourceUrl.searchParams.set("schema", "user_service");
+}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -17,7 +18,11 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: datasourceUrl.toString(),
-    shadowDatabaseUrl: process.env["SHADOW_DATABASE_URL"],
+    ...(datasourceUrl
+      ? { url: datasourceUrl.toString() }
+      : {}),
+    ...(process.env["SHADOW_DATABASE_URL"]
+      ? { shadowDatabaseUrl: process.env["SHADOW_DATABASE_URL"] }
+      : {}),
   },
 });
