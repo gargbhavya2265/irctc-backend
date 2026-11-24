@@ -6,7 +6,10 @@ const connectionString = config.DATABASE_URL;
 const globalForPrisma = global;
 
 if (!globalForPrisma.prisma) {
-  const adapter = new PrismaPg({ connectionString });
+  const adapter = new PrismaPg(
+    { connectionString },
+    { schema: "user_service" }
+  );
 
   globalForPrisma.prisma = new PrismaClient({
     adapter,
